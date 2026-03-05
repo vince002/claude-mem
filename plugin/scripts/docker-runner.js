@@ -9,6 +9,7 @@
  */
 
 import { spawnSync } from 'child_process';
+import { resolve } from 'path';
 
 const CONTAINER_NAME = 'claude-mem-worker';
 const CONTAINER_WORKDIR = '/app/plugin';
@@ -23,10 +24,26 @@ if (args.length === 0) {
 const script = args[0];
 const scriptArgs = args.slice(1);
 
-// Map host paths to container paths (support both with and without /plugin suffix)
+// Validate script path exists
+const fs = await import('fs');
+if (!fs.existsSync(script)) {
+  console.error(`Error: Script not found: ${script}`);
+  process.exit(1);
+}
+
+// Get real path and extract base plugin directory dynamically
+const realScriptPath = resolve(script);
+const match = realScriptPath.match(/(.+\/\.claude\/plugins\/marketplaces\/thedotmack\/plugin)/);
+if (!match) {
+  console.error(`Error: Invalid script path. Expected path under ~/.claude/plugins/marketplaces/thedotmack/plugin, got: ${realScriptPath}`);
+  process.exit(1);
+}
+const hostPluginDir = match[1];
+
+// Map host paths to container paths
 let containerScript = script
-  .replace(/\/Users\/vince\/\.claude\/plugins\/marketplaces\/thedotmack\/plugin/g, CONTAINER_WORKDIR)
-  .replace(/\/Users\/vince\/\.claude\/plugins\/marketplaces\/thedotmack/g, '/app');
+  .replace(hostPluginDir, CONTAINER_WORKDIR)
+  .replace(/\/Users\/[^/]+\/\.claude\/plugins\/marketplaces\/thedotmack/, '/app');
 
 // Build docker exec command with working directory
 const dockerArgs = [
