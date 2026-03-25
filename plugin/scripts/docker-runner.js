@@ -33,9 +33,10 @@ if (!fs.existsSync(script)) {
 
 // Get real path and extract base plugin directory dynamically
 const realScriptPath = resolve(script);
-const match = realScriptPath.match(/(.+\/\.claude\/plugins\/marketplaces\/thedotmack\/plugin)/);
+// Support both marketplaces and cache paths
+const match = realScriptPath.match(/(.+\/\.claude\/plugins\/(?:marketplaces|cache)\/thedotmack\/(?:plugin|claude-mem\/[^/]+))/);
 if (!match) {
-  console.error(`Error: Invalid script path. Expected path under ~/.claude/plugins/marketplaces/thedotmack/plugin, got: ${realScriptPath}`);
+  console.error(`Error: Invalid script path. Expected path under ~/.claude/plugins/marketplaces/thedotmack/plugin or ~/.claude/plugins/cache/thedotmack/claude-mem/, got: ${realScriptPath}`);
   process.exit(1);
 }
 const hostPluginDir = match[1];
@@ -43,7 +44,7 @@ const hostPluginDir = match[1];
 // Map host paths to container paths
 let containerScript = script
   .replace(hostPluginDir, CONTAINER_WORKDIR)
-  .replace(/\/Users\/[^/]+\/\.claude\/plugins\/marketplaces\/thedotmack/, '/app');
+  .replace(/\/Users\/[^/]+\/\.claude\/plugins\/(?:marketplaces|cache)\/thedotmack/, '/app');
 
 // Build docker exec command with working directory
 const dockerArgs = [
